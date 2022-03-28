@@ -73,10 +73,10 @@ public class DuplicateFileFinder {
                     scannedFiles.add(currentFileProperties);
                     //System.out.println("File is not duplicate");
                 } else {
-                    
-                System.out.println("\n\n\n"+duplicateFiles.size() + ": \n\tAbsolutePath:\t" + currentFileProperties.getAbsolutePath() + "\n\tFileName:\t" + currentFileProperties.getFileName() + "\n\tSize:\t\t" + currentFileProperties.getSize());
+
+                    System.out.println("\n\n\n" + duplicateFiles.size() + ": \n\tAbsolutePath:\t" + currentFileProperties.getAbsolutePath() + "\n\tFileName:\t" + currentFileProperties.getFileName() + "\n\tSize:\t\t" + currentFileProperties.getSize());
                     duplicateFiles.add(currentFileProperties);
-                    System.out.println("Duplicate of: "+currentFileProperties.duplicateOfFilePath);
+                    System.out.println("Duplicate of: " + currentFileProperties.duplicateOfFilePath);
                 }
 
             } else {
@@ -88,18 +88,18 @@ public class DuplicateFileFinder {
     }
 
     void updateFields() {
-        scannedFilesCountLabel.setText(scannedFiles.size()+duplicateFiles.size()+ "");
+        scannedFilesCountLabel.setText(scannedFiles.size() + duplicateFiles.size() + "");
         updateDetailsTextArea();
-        duplicateFilesCountLabel.setText(duplicateFiles.size() + "");   
-        ArrayList<String> originalFilePathArray=new ArrayList<>();
-        ArrayList<String> duplicateFilePathArray=new ArrayList<>();
-        for(FileProperties fp : duplicateFiles){
+        duplicateFilesCountLabel.setText(duplicateFiles.size() + "");
+        ArrayList<String> originalFilePathArray = new ArrayList<>();
+        ArrayList<String> duplicateFilePathArray = new ArrayList<>();
+        for (FileProperties fp : duplicateFiles) {
             originalFilePathArray.add(fp.duplicateOfFilePath);
             duplicateFilePathArray.add(fp.absolutePath);
         }
         originalFilePathList.setListData(originalFilePathArray.toArray());
         duplicateFilePathList.setListData(duplicateFilePathArray.toArray());
-        
+
     }
 
     void initOutputField(JTextArea jTextArea1) {
@@ -116,7 +116,7 @@ public class DuplicateFileFinder {
 
     public void toggleShowDetails() {
         showDetails = !showDetails;
-        if(showDetails){
+        if (showDetails) {
             updateDetailsTextArea();
         }
     }
