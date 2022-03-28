@@ -8,7 +8,8 @@ package lu.jojaweb.duplicatefilefinder;
  *
  * @author Joshua
  */
-public class FileProperties {
+public class FileProperties implements Comparable<FileProperties> {
+
     String fileName;
     long size;
     String absolutePath;
@@ -31,14 +32,22 @@ public class FileProperties {
     public String getAbsolutePath() {
         return absolutePath;
     }
-    
+
     public String getPropertiesString() {
-        return fileName+","+size;
+        return fileName + "," + size;
     }
 
     public void setDuplicateOfFilePath(String duplicateOfFilePath) {
         this.duplicateOfFilePath = duplicateOfFilePath;
     }
-    
-    
+
+    @Override
+    public int compareTo(FileProperties o) {
+        return this.fileName.compareTo(o.fileName);
+    }
+
+    boolean isFileNameAndSizeEqual(FileProperties fp) {
+        return this.fileName.equals(fp.fileName) && this.size == fp.size;
+    }
+
 }
