@@ -6,7 +6,8 @@ package lu.jojaweb.duplicatefilefinder;
 
 import java.awt.Container;
 import java.awt.Desktop;
-import java.awt.Dialog;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.KeyEvent;
@@ -17,10 +18,7 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.filechooser.FileSystemView;
+import javax.swing.Timer;
 import javax.swing.text.DefaultCaret;
 
 /**
@@ -30,12 +28,19 @@ import javax.swing.text.DefaultCaret;
 public class MainFrame extends javax.swing.JFrame {
 
     DuplicateFileFinder dff = new DuplicateFileFinder();
+    Thread currentScan;
+    private boolean duplicateFilePathListValueChangedPaused = false;
+    private boolean originalFilePathListValueChangedPaused = false;
 
     /**
      * Creates new form MainFrame
      */
     public MainFrame() {
+
         initComponents();
+
+        originalFilePathList.setDoubleBuffered(true);
+        duplicateFilePathList.setDoubleBuffered(true);
         dff.initOutputField(jTextArea1);
         dff.initScannedFilesCountLabel(scannedFilesCountLabel);
         dff.initDuplicateFilesCountLabel(duplicateFilesCountLabel);
@@ -43,16 +48,16 @@ public class MainFrame extends javax.swing.JFrame {
         dff.initDuplicateFilePathList(duplicateFilePathList);
         DefaultCaret caret = (DefaultCaret) jTextArea1.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-        new Thread(new Runnable() {
+        currentScan = new Thread(new Runnable() {
             @Override
             public void run() {
-                dff.scanAllFilesOnDrive("D");
-
+                //dff.scanAllFilesOnDrive("D");
                 //String[] paths = {"D:\\Pictures","C:\\Users\\Joshua\\OneDrive\\Bilder","D:\\Documents\\Note8-BackUp-Caroline","D:\\Documents\\S9_Backup","D:\\Documents\\Xperia Z5 Compact"};
-                //String[] paths = {"D:\\Pictures\\Xperia Z5 Compact\\WhatsApp\\Media\\WhatsApp Images", "D:\\Pictures\\S9_Backup\\WhatsApp Images"};
-                //dff.scanAllFilesInPaths(paths);
+                String[] paths = {"D:\\Pictures\\Xperia Z5 Compact\\WhatsApp\\Media\\WhatsApp Images", "D:\\Pictures\\S9_Backup\\WhatsApp Images"};
+                dff.scanAllFilesInPaths(paths);
             }
-        }).start();
+        });
+        currentScan.start();
 
         Container jTextAreaContainer = jTextArea1.getParent().getParent();
         jTextAreaContainer.setVisible(false);
@@ -75,17 +80,15 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnsupportedLookAndFeelException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        new Timer(100, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (currentScan.isAlive()) {
+                    originalFilePathList.repaint();
+                    duplicateFilePathList.repaint();
+                }
+            }
+        }).start();
     }
 
     /**
@@ -137,6 +140,7 @@ public class MainFrame extends javax.swing.JFrame {
 
         jSplitPane1.setResizeWeight(0.5);
 
+        originalFilePathList.setAutoscrolls(false);
         originalFilePathList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 originalFilePathListMouseClicked(evt);
@@ -220,7 +224,6 @@ public class MainFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
         dff.toggleShowDetails();
         Container jTextAreaContainer = jTextArea1.getParent().getParent();
         if (!jTextAreaContainer.isVisible()) {
@@ -233,11 +236,19 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void originalFilePathListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_originalFilePathListValueChanged
-        duplicateFilePathList.setSelectedIndex(originalFilePathList.getSelectedIndex());
+        if (!originalFilePathListValueChangedPaused) {
+            duplicateFilePathListValueChangedPaused = true;
+            duplicateFilePathList.setSelectedIndices(originalFilePathList.getSelectedIndices());
+            duplicateFilePathListValueChangedPaused = false;
+        }
     }//GEN-LAST:event_originalFilePathListValueChanged
 
     private void duplicateFilePathListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_duplicateFilePathListValueChanged
-        originalFilePathList.setSelectedIndex(duplicateFilePathList.getSelectedIndex());
+        if (!duplicateFilePathListValueChangedPaused) {
+            originalFilePathListValueChangedPaused = true;
+            originalFilePathList.setSelectedIndices(duplicateFilePathList.getSelectedIndices());
+            originalFilePathListValueChangedPaused = false;
+        }
     }//GEN-LAST:event_duplicateFilePathListValueChanged
 
     private void duplicateFilePathListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_duplicateFilePathListMouseClicked
@@ -259,25 +270,31 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void duplicateFilePathListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_duplicateFilePathListKeyPressed
         if (duplicateFilePathList.getSelectedIndex() != -1) {
-            String selectedPath = duplicateFilePathList.getSelectedValue().toString();
+            Object[] selectedPaths = duplicateFilePathList.getSelectedValuesList().toArray();
             if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
                 //Desktop.getDesktop().open(new File(doubleClickedPath.substring(0,doubleClickedPath.lastIndexOf("\\")+1)));
-                openFileOrFolder(selectedPath);
+                openFileOrFolder(selectedPaths[0].toString());
             }
             if (evt.getKeyCode() == KeyEvent.VK_DELETE) {
                 int[] indices = duplicateFilePathList.getSelectedIndices();
                 int deletionConfirmation = JOptionPane.CANCEL_OPTION;
                 if (indices.length > 1) {
                     deletionConfirmation = JOptionPane.showConfirmDialog(null, "Delete " + indices.length + " files?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
-                } else {
-                    deletionConfirmation = JOptionPane.showConfirmDialog(null, "Delete \"" + selectedPath + "\"?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
+                } else if (indices.length == 1) {
+                    deletionConfirmation = JOptionPane.showConfirmDialog(null, "Delete \"" + selectedPaths[0] + "\"?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
                 }
                 if (deletionConfirmation == JOptionPane.OK_OPTION) {
-                    for (Object o : duplicateFilePathList.getSelectedValuesList()) {
-
+                    for (Object o : duplicateFilePathList.getSelectedValuesList().toArray()) {
                         try {
-                            Files.delete(Paths.get(o.toString()));
+                            if (!Files.deleteIfExists(Paths.get(o.toString()))) {
+                                JOptionPane.showMessageDialog(null, "An error occured while trying to delete the file/folder '" + o.toString() + "'\n\tReason: File/Folder does no longer exist", "Error", JOptionPane.ERROR_MESSAGE);
+                                System.out.println("An error occured while trying to delete the file/folder '" + o.toString() + "'\n\tReason: File/Folder does no longer exist");
+                            } else {
+                                System.out.println(o.toString() + " was successfully deleted.");
+                                dff.setFileDeleted(o.toString());
+                            }
                         } catch (IOException ex) {
+                            System.out.println("An IOException occured while trying to delete '" + o.toString() + "' -> " + ex.getMessage());
                             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
@@ -288,18 +305,33 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void originalFilePathListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_originalFilePathListKeyPressed
         if (originalFilePathList.getSelectedIndex() != -1) {
-            String selectedPath = originalFilePathList.getSelectedValue().toString();
+            Object[] selectedPaths = originalFilePathList.getSelectedValuesList().toArray();
             if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
                 //Desktop.getDesktop().open(new File(doubleClickedPath.substring(0,doubleClickedPath.lastIndexOf("\\")+1)));
-                openFileOrFolder(selectedPath);
+                openFileOrFolder(selectedPaths[0].toString());
             }
             if (evt.getKeyCode() == KeyEvent.VK_DELETE) {
-                int deletionConfirmation = JOptionPane.showConfirmDialog(null, "Delete \"" + selectedPath + "\"?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
+                int[] indices = originalFilePathList.getSelectedIndices();
+                int deletionConfirmation = JOptionPane.CANCEL_OPTION;
+                if (indices.length > 1) {
+                    deletionConfirmation = JOptionPane.showConfirmDialog(null, "Delete " + indices.length + " files?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
+                } else if (indices.length == 1) {
+                    deletionConfirmation = JOptionPane.showConfirmDialog(null, "Delete \"" + selectedPaths[0] + "\"?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
+                }
                 if (deletionConfirmation == JOptionPane.OK_OPTION) {
-                    try {
-                        Files.delete(Paths.get(selectedPath));
-                    } catch (IOException ex) {
-                        Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    for (Object o : originalFilePathList.getSelectedValuesList().toArray()) {
+                        try {
+                            if (!Files.deleteIfExists(Paths.get(o.toString()))) {
+                                JOptionPane.showMessageDialog(null, "An error occured while trying to delete the file/folder '" + o.toString() + "'\n\tReason: File/Folder does no longer exist", "Error", JOptionPane.ERROR_MESSAGE);
+                                System.out.println("An error occured while trying to delete the file/folder '" + o.toString() + "'\n\tReason: File/Folder does no longer exist");
+                            } else {
+                                System.out.println(o.toString() + " was successfully deleted.");
+                                dff.setFileDeleted(o.toString());
+                            }
+                        } catch (IOException ex) {
+                            System.out.println("An IOException occured while trying to delete '" + o.toString() + "' -> " + ex.getMessage());
+                            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
                 }
             }
