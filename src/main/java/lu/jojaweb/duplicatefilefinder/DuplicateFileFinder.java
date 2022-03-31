@@ -19,6 +19,10 @@ import javax.swing.Timer;
  */
 public class DuplicateFileFinder {
 
+    boolean printDuplicateInfo = false;
+    boolean printDirectoryScanInfo = true;
+    boolean printFileScanInfo = true;
+
     String[] drives = {"C"};
     JTextArea outputArea;
     ArrayList<FileProperties> scannedFiles = new ArrayList<>();
@@ -26,8 +30,8 @@ public class DuplicateFileFinder {
     JLabel scannedFilesCountLabel;
     JLabel duplicateFilesCountLabel;
     private boolean showDetails = false;
-    private JList<Object> originalFilePathList;
-    private JList<Object> duplicateFilePathList;
+    private JList<Object> originalFilePathJList;
+    private JList<Object> duplicateFilePathJList;
     private Timer updateJListsTimer;
 
     public DuplicateFileFinder() {
@@ -70,6 +74,7 @@ public class DuplicateFileFinder {
         }
 
         for (File child : f) {
+            long startTime = System.currentTimeMillis();
             if (child.isFile()) {
                 String absolutePath = child.getAbsolutePath();
                 long size = -1;
@@ -90,14 +95,25 @@ public class DuplicateFileFinder {
                 }
                 scannedFiles.add(currentFileProperties);
                 if (isDuplicate) {
-                    System.out.println("\n\n\n" + duplicateFiles.size() + ": \n\tAbsolutePath:\t" + currentFileProperties.getAbsolutePath() + "\n\tFileName:\t" + currentFileProperties.getFileName() + "\n\tType:\t\t" + currentFileProperties.getType() + "\n\tSize:\t\t" + currentFileProperties.getSize());
                     duplicateFiles.add(currentFileProperties);
-                    System.out.println("Duplicate of: " + currentFileProperties.duplicateOfFilePath);
+                    if (printDuplicateInfo) {
+                        System.out.println("\n\n\n" + duplicateFiles.size() + ": \n\tAbsolutePath:\t" + currentFileProperties.getAbsolutePath() + "\n\tFileName:\t" + currentFileProperties.getFileName() + "\n\tType:\t\t" + currentFileProperties.getType() + "\n\tSize:\t\t" + currentFileProperties.getSize());
+                        System.out.println("Duplicate of: " + currentFileProperties.duplicateOfFilePath);
+                    }
+                }
+
+                if (printFileScanInfo) {
+                    System.out.println("Checked if \"" + child.getAbsolutePath() + "\" is duplicate(" + (System.currentTimeMillis() - startTime) + "ms)");
                 }
 
             } else {
-                //System.out.println("Scanning directory: " + child.getAbsolutePath().substring(child.getAbsolutePath().lastIndexOf("\\") + 1));
+                if (printDirectoryScanInfo) {
+                    System.out.println("Scanning directory: " + child.getAbsolutePath());
+                }
                 scanAllFilesInPath(child.getAbsolutePath());
+                if (printDirectoryScanInfo) {
+                    System.out.println("Scanned \"" + child.getAbsolutePath() + "\" (" + (System.currentTimeMillis() - startTime) + "ms)");
+                }
             }
             updateFields();
         }
@@ -107,7 +123,6 @@ public class DuplicateFileFinder {
         scannedFilesCountLabel.setText(scannedFiles.size() + "");
         duplicateFilesCountLabel.setText(duplicateFiles.size() + "");
         updateDetailsTextArea();
-
     }
 
     void initOutputField(JTextArea jTextArea1) {
@@ -130,11 +145,11 @@ public class DuplicateFileFinder {
     }
 
     void initOriginalFilePathList(JList<Object> originalFilePathList) {
-        this.originalFilePathList = originalFilePathList;
+        this.originalFilePathJList = originalFilePathList;
     }
 
     void initDuplicateFilePathList(JList<Object> duplicateFilePathList) {
-        this.duplicateFilePathList = duplicateFilePathList;
+        this.duplicateFilePathJList = duplicateFilePathList;
     }
 
     private void updateDetailsTextArea() {
@@ -156,7 +171,7 @@ public class DuplicateFileFinder {
         }
     }
 
-    private void updateJLists() {
+    private void updateJLists() {        
         ArrayList<FileProperties> duplicateFilesClone = (ArrayList<FileProperties>) duplicateFiles.clone();
         ArrayList<String> originalFilePathArray = new ArrayList<>();
         ArrayList<String> duplicateFilePathArray = new ArrayList<>();
@@ -166,9 +181,13 @@ public class DuplicateFileFinder {
                 duplicateFilePathArray.add(fp.absolutePath);
             }
         }
-        originalFilePathList.setListData(originalFilePathArray.toArray());
-        duplicateFilePathList.setListData(duplicateFilePathArray.toArray());
-        originalFilePathList.repaint();
+        int[] originalFilePathJListSelectedIndices=originalFilePathJList.getSelectedIndices();
+        int[] duplicateFilePathJListSelectedIndices=duplicateFilePathJList.getSelectedIndices();
+        originalFilePathJList.setListData(originalFilePathArray.toArray());
+        duplicateFilePathJList.setListData(duplicateFilePathArray.toArray());
+        originalFilePathJList.setSelectedIndices(originalFilePathJListSelectedIndices);
+        duplicateFilePathJList.setSelectedIndices(duplicateFilePathJListSelectedIndices);
+        originalFilePathJList.repaint();
     }
 
     public void setFileDeleted(String path) {
