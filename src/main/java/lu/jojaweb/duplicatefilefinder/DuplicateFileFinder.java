@@ -20,8 +20,8 @@ import javax.swing.Timer;
 public class DuplicateFileFinder {
 
     boolean printDuplicateInfo = false;
-    boolean printDirectoryScanInfo = true;
-    boolean printFileScanInfo = true;
+    boolean printDirectoryScanInfo = false;
+    boolean printFileScanInfo = false;
 
     String[] drives = {"C"};
     JTextArea outputArea;
@@ -162,12 +162,9 @@ public class DuplicateFileFinder {
             for (int i = sizeMinus1000Index; i < scannedFiles.size(); i++) {
                 FileProperties fp = scannedFiles.get(i);
                 String absolutePathString = fp.getAbsolutePath();
-                if (fp.isDuplicate()) {
-                    absolutePathString = "<p style=\"\">" + absolutePathString + "</p>";
-                }
-                last1000FilesString += ("\n" + i + 1 + ": " + absolutePathString);
+                last1000FilesString += ("\n" + i + 1 + ": " + absolutePathString+"");
             }
-            outputArea.setText(last1000FilesString);
+            outputArea.setText(last1000FilesString.substring(last1000FilesString.indexOf("\n")+1));
         }
     }
 
